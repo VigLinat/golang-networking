@@ -9,19 +9,10 @@ import (
 	"time"
 )
 
-func handleConn(c net.Conn) {
-
-	logConnReceived(c)
-	io.Copy(c, c)
-	fmt.Fprintf(os.Stdout, "MESSAGE [%s] Received byte sequence:", time.Now().Format(time.TimeOnly))
-	io.Copy(os.Stdout, c) // TEMPORARY
-	fmt.Fprintln(os.Stdout)
-	c.Close()
-	logConnClosing(c)
-}
-
 var hostPort = "50160"
 var hostAddr = "localhost"
+
+var connectedClients map[string]net.Conn = make(map[string]net.Conn)
 
 func main() {
 	parseArgs()
@@ -30,14 +21,45 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+    go listenForClients(listener)
+}
+
+func listenForClients(listener net.Listener) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Print(err)
 			continue
 		}
+        handleNewClient(conn)
 		go handleConn(conn)
 	}
+}
+
+func listenToClient(client net.Conn) <-chan string {
+    res := make(chan string)
+    go func(conn net.Conn) {
+        buff := make([]byte, 2048)
+        for {
+            if n, err := conn.Read(buff); err != nil {
+                res <- string(buff[:n])
+            }
+        }
+    }(client)
+    return res
+}
+
+func handleNewClient(c net.Conn) {
+    logConnReceived(c)
+    connectedClients[c.LocalAddr().String()] = c
+}
+
+func handleConn(c net.Conn) {
+	fmt.Fprintf(os.Stdout, "MESSAGE [%s] Received byte sequence:", time.Now().Format(time.TimeOnly))
+	io.Copy(os.Stdout, c) // TEMPORARY
+	fmt.Fprintln(os.Stdout)
+
+	logConnClosing(c)
 }
 
 func logConnReceived(c net.Conn) {
