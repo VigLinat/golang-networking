@@ -11,8 +11,19 @@ import (
 
 var hostPort = "50160"
 var hostAddr = "localhost"
+var peerChan chan string = make(chan string)
 
-var connectedClients map[string]net.Conn = make(map[string]net.Conn)
+var rooms map[int]message
+
+type client struct {
+    connection net.Conn
+    name string
+}
+
+type message struct {
+    user string
+    content string
+}
 
 func main() {
 	parseArgs()
@@ -32,7 +43,6 @@ func listenForClients(listener net.Listener) {
 			continue
 		}
         handleNewClient(conn)
-		go handleConn(conn)
 	}
 }
 
