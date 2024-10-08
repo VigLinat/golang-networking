@@ -13,7 +13,7 @@ var hostPort = "50160"
 var hostAddr = "localhost"
 var peerChan chan string = make(chan string)
 
-var room chan *Message // One common room for now
+var room chan *Message = make(chan *Message)// One common room for now
 
 type Client struct {
     Conn net.Conn
@@ -57,7 +57,6 @@ func main() {
 			log.Print(err)
 			continue
 		}
-        logConnReceived(conn)
         handleNewClient(conn)
 	}
 }
