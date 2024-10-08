@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
 	"time"
-    "github.com/google/uuid"
+
+	"github.com/google/uuid"
 )
 
 var hostPort = "50160"
@@ -23,11 +26,20 @@ type Client struct {
 
 // Read reads data from Client connection to room
 func (client *Client) Read(room chan <- *Message) {
-    buffer := make([]byte, 2048)
+    var reader *bufio.Reader = bufio.NewReader(client.Conn)
+    defer client.Conn.Close()
     for {
-        if _, err := client.Conn.Read(buffer); err != nil {
-            message := &Message{client, buffer} 
+        if content, err := reader.ReadBytes('\n'); err == nil {
+            fmt.Fprintf(os.Stdout, "[%s]: %s\n", client.Conn.LocalAddr().String(), content)
+            message := &Message{client, content} 
             room <- message
+        } else {
+            if err == io.EOF {
+                fmt.Fprintf(os.Stdout, "Client [%s] disconnected\n", client.Conn.LocalAddr().String())
+            } else {
+                fmt.Fprintf(os.Stdout, "Client [%s] Read error: %s\n", client.Conn.LocalAddr().String(), err.Error())
+            }
+            break;
         }
     }
 }
