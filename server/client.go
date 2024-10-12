@@ -41,8 +41,7 @@ func (client *Client) Read() {
             break;
         }
         fmt.Fprintf(os.Stdout, "[%s]: %s\n", client.conn.RemoteAddr().String(), content)
-        content = bytes.TrimSpace(bytes.Replace(content, []byte{'\n'}, []byte{' '}, -1)) 
-        content = append(content, '\n')
+        content = bytes.TrimSpace(content) 
         client.room.broadcast <- &Message{client, content}
     }
 }
